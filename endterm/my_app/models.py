@@ -32,3 +32,11 @@ class Item(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class ItemPhoto(models.Model):
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='photos')
+    photo = models.ImageField(upload_to='item_photos/')
+
+    def __str__(self):
+        return f"Photo for {self.item.name}"

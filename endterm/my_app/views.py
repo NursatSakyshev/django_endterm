@@ -1,7 +1,8 @@
 # catalog/views.py
-from rest_framework import generics
-from .models import Category, Item
-from .serializers import CategorySerializer, ItemSerializer
+from rest_framework import generics, status
+from .models import Category, Item, ItemPhoto
+from rest_framework.parsers import MultiPartParser, FormParser
+from .serializers import CategorySerializer, ItemSerializer, ItemPhotoSerializer
 from rest_framework.response import Response
 
 
@@ -51,6 +52,46 @@ class ItemRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
                 "updated_at": instance.category.updated_at,
                 "href": instance.category.href,
             },
+            "photos": [
+                request.build_absolute_uri(photo.photo.url) for photo in instance.photos.all()
+            ],
         }
 
         return Response(struct_response)
+
+
+class ItemPhotoListCreateView(generics.GenericAPIView):
+    """
+    API endpoint for listing and uploading photos for a specific Item.
+    """
+    serializer_class = ItemPhotoSerializer
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get_queryset(self, item_id):
+        return ItemPhoto.objects.filter(item_id=item_id)
+
+    def get(self, request, item_id, *args, **kwargs):
+        """
+        List all photos for the given Item.
+        """
+        photos = self.get_queryset(item_id)
+        serializer = self.get_serializer(photos, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, item_id, *args, **kwargs):
+        """
+        Upload a photo for the given Item.
+        """
+        try:
+            # Validate that the item exists
+            item = Item.objects.get(pk=item_id)
+        except Item.DoesNotExist:
+            return Response({"error": "Item not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Add the item to the incoming photo data
+        request.data['item'] = item_id
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
