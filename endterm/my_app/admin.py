@@ -2,7 +2,7 @@ from django.contrib import admin
 
 # Register your models here.
 from django.contrib import admin
-from .models import Item, Category, ItemPhoto
+from .models import Item, Category, ItemPhoto, Shop
 
 
 @admin.register(Category)
@@ -10,6 +10,10 @@ class CategoryAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'archived', 'updated_at', 'href')
     search_fields = ('name',)  # Enable search by category name
 
+@admin.register(Shop)
+class ShopAdmin(admin.ModelAdmin):
+    list_display = ['id', 'username', 'password']  
+    search_fields = ['username']  
 
 @admin.register(Item)
 class ItemAdmin(admin.ModelAdmin):

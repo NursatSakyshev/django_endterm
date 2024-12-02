@@ -1,10 +1,14 @@
 # catalog/views.py
 from rest_framework import generics, status
-from .models import Category, Item, ItemPhoto
+from rest_framework.views import APIView
+from .models import Category, Item, ItemPhoto, Shop
 from rest_framework.parsers import MultiPartParser, FormParser
-from .serializers import CategorySerializer, ItemSerializer, ItemPhotoSerializer
+from .serializers import CategorySerializer, CustomTokenObtainPairSerializer, ItemSerializer, ItemPhotoSerializer, ShopRegisterSerializer, ShopSerializer
 from rest_framework.response import Response
-
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.generics import ListCreateAPIView, ListAPIView
+from .serializers import ItemSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 class CategoryListCreateView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
@@ -16,11 +20,31 @@ class CategoryRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CategorySerializer
 
 
-class ItemListCreateView(generics.ListCreateAPIView):
-    queryset = Item.objects.all()
+class ItemListCreateView(ListCreateAPIView):
     serializer_class = ItemSerializer
+    permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        return Item.objects.filter(shop=self.request.user.id)
 
+    def perform_create(self, serializer):
+         serializer.save(shop=self.request.user.id)
+
+class ShopRegisterView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = ShopRegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()  
+            return Response({"message": "Shop registered successfully"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ShopListView(ListAPIView):
+    queryset = Shop.objects.all() 
+    serializer_class = ShopSerializer
+
+    
 class ItemRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
@@ -95,3 +119,6 @@ class ItemPhotoListCreateView(generics.GenericAPIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# class CustomTokenObtainPairView(TokenObtainPairView):
+#     serializer_class = CustomTokenObtainPairSerializer        
