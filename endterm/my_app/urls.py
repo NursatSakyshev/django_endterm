@@ -1,14 +1,13 @@
 # catalog/urls.py
 from django.urls import path
-from .views import CategoryListCreateView, CategoryRetrieveUpdateDestroyView, ItemListCreateView, \
+from .views import CategoryListView, ItemListCreateView, \
     ItemRetrieveUpdateDestroyView, ItemPhotoListCreateView, ShopRegisterView, ShopListView
 from django.conf.urls.static import static
 from django.conf import settings
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
-    path('categories/', CategoryListCreateView.as_view(), name='category-list-create'),
-    path('categories/<int:pk>/', CategoryRetrieveUpdateDestroyView.as_view(), name='category-detail'),
+    path('categories/', CategoryListView.as_view(), name='category-list-create'),
     path('register/', ShopRegisterView.as_view(), name='shop_register'),
     path('items/', ItemListCreateView.as_view(), name='item-list-create'),
     path('items/<int:pk>/', ItemRetrieveUpdateDestroyView.as_view(), name='item-detail'),

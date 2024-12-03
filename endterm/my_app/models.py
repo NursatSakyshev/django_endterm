@@ -15,7 +15,9 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
+
 from django.contrib.auth.models import BaseUserManager
+
 
 class ShopManager(BaseUserManager):
     def create_user(self, username, email, password=None, **extra_fields):
@@ -36,23 +38,21 @@ class ShopManager(BaseUserManager):
     def get_by_natural_key(self, name):
         return self.get(username=name)
 
+
 class Shop(AbstractUser):
-
     username = models.CharField(max_length=255, unique=True)
-    email = models.EmailField(unique=True)  
-    password = models.CharField(max_length=128)  
-
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=128)
 
     USERNAME_FIELD = 'username'
 
-
-    REQUIRED_FIELDS = ['email']  
+    REQUIRED_FIELDS = ['email']
 
     is_superuser = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     last_login = models.DateTimeField(auto_now=True)
-    
-    objects = ShopManager()  
+
+    objects = ShopManager()
 
     def __str__(self):
         return self.username
@@ -70,7 +70,7 @@ class Item(models.Model):
     weight = models.FloatField()
     in_stock = models.BooleanField(default=True)
     updated_at = models.DateTimeField(auto_now=True)
-    shop = models.IntegerField()
+    shop_id = models.ForeignKey(Shop, on_delete=models.CASCADE)
     sale_id = models.IntegerField()
     tags_id = models.IntegerField()
 
