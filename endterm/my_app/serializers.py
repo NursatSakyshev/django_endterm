@@ -8,13 +8,12 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = ['id', 'name', 'archived', 'updated_at', 'href']
 
+    def create(self, validated_data):
+        user = self.context['request'].user
 
-class ShopTokenObtainPairSerializer(TokenObtainPairSerializer):
-    def validate(self, attrs):
-        data = super().validate(attrs)
-        shop = self.user
-        data['shop_name'] = shop.name
-        return data
+        validated_data['shop_id'] = user.id
+
+        return super().create(validated_data)
 
 
 class ItemSerializer(serializers.ModelSerializer):
@@ -26,7 +25,7 @@ class ItemSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context['request'].user
 
-        validated_data['shop'] = user.id
+        validated_data['shop_id'] = user.id
 
         return super().create(validated_data)
 

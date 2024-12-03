@@ -9,27 +9,79 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.generics import ListCreateAPIView, ListAPIView
 from .serializers import ItemSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from django.shortcuts import get_object_or_404
 
 
-class CategoryListView(generics.ListAPIView):
+class CategoryListCreateView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Category.objects.filter(shop_id=self.request.user.id)
+
+    def perform_create(self, serializer):
+        serializer.save(shop_id=self.request.user.id)
 
 
-# class CategoryRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-#     queryset = Category.objects.all()
-#     serializer_class = CategorySerializer
+class CategoryRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Category.objects.filter(shop_id=self.request.user.id)
+
+    def perform_create(self, serializer):
+        serializer.save(shop_id=self.request.user.id)
 
 
 class ItemListCreateView(ListCreateAPIView):
     serializer_class = ItemSerializer
     permission_classes = [IsAuthenticated]
 
+    def get(self, request, *args, **kwargs):
+        items = self.get_queryset()
+
+        struct_response = []
+
+        for item in items:
+            item_response = {
+                "item": {
+                    "id": item.id,
+                    "name": item.name,
+                    "description": item.description,
+                    "code": item.code,
+                    "buy_price": item.buy_price,
+                    "sale_price": item.sale_price,
+                    "href": item.href,
+                    "weight": item.weight,
+                    "in_stock": item.in_stock,
+                    "count": item.count,
+                    "updated_at": item.updated_at,
+                    "sale_id": item.sale_id,
+                    "tags_id": item.tags_id,
+                },
+                "category": {
+                    "id": item.category.id,
+                    "name": item.category.name,
+                    "archived": item.category.archived,
+                    "updated_at": item.category.updated_at,
+                    "href": item.category.href,
+                },
+                "photos": [
+                    request.build_absolute_uri(photo.photo.url) for photo in item.photos.all()
+                ],
+            }
+            struct_response.append(item_response)
+
+        return Response(struct_response)
+
     def get_queryset(self):
-        return Item.objects.filter(shop=self.request.user.id)
+        return Item.objects.filter(shop_id=self.request.user.id, in_stock=True)
 
     def perform_create(self, serializer):
-        serializer.save(shop=self.request.user.id)
+        serializer.save(shop_id=self.request.user.id)
 
 
 class ShopRegisterView(APIView):
@@ -51,6 +103,7 @@ class ShopListView(ListAPIView):
 class ItemRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         # Retrieve the item instance based on the URL parameter (e.g., `pk`)
@@ -68,6 +121,7 @@ class ItemRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
                 "href": instance.href,
                 "weight": instance.weight,
                 "in_stock": instance.in_stock,
+                "count": instance.count,
                 "updated_at": instance.updated_at,
                 "sale_id": instance.sale_id,
                 "tags_id": instance.tags_id,
@@ -87,7 +141,7 @@ class ItemRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
         return Response(struct_response)
 
     def get_queryset(self):
-        return Item.objects.filter(shop=self.request.user.id)
+        return Item.objects.filter(shop_id=self.request.user.id)
 
 
 class ItemPhotoListCreateView(generics.GenericAPIView):
@@ -96,6 +150,7 @@ class ItemPhotoListCreateView(generics.GenericAPIView):
     """
     serializer_class = ItemPhotoSerializer
     parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self, item_id):
         return ItemPhoto.objects.filter(item_id=item_id)
@@ -126,5 +181,21 @@ class ItemPhotoListCreateView(generics.GenericAPIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# class CustomTokenObtainPairView(TokenObtainPairView):
-#     serializer_class = CustomTokenObtainPairSerializer
+
+class ItemTransactionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        product = get_object_or_404(Item, pk=pk, shop=request.user)
+
+        decrement = request.data.get("count", 0)
+        print(decrement)
+        if not isinstance(decrement, int) or decrement <= 0:
+            return Response({"error": "Invalid decrement value"}, status=status.HTTP_400_BAD_REQUEST)
+        if product.count >= decrement:
+            product.count -= decrement
+            print(product.count)
+            product.save()
+            return Response({"message": "count decreased", "count": product.count}, status=status.HTTP_200_OK)
+        else:
+            return Response({"error": "Not enough count"}, status=status.HTTP_400_BAD_REQUEST)
