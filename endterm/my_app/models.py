@@ -17,7 +17,7 @@ class Category(models.Model):
 
 from django.contrib.auth.models import BaseUserManager
 
-class ShopManager(models.Manager):
+class ShopManager(BaseUserManager):
     def create_user(self, username, email, password=None, **extra_fields):
         if not email:
             raise ValueError('The Email field must be set')
