@@ -2,7 +2,7 @@ from django.contrib import admin
 
 # Register your models here.
 from django.contrib import admin
-from .models import Item, Category, ItemPhoto, Shop
+from .models import Item, Category, ItemPhoto, Shop, PreOrder
 
 
 @admin.register(Category)
@@ -40,3 +40,14 @@ class ItemPhotoAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.filter(item__shop_id=request.user.id)
+
+
+@admin.register(PreOrder)
+class PreOrderAdmin(admin.ModelAdmin):
+    list_display = ['item', 'shop', 'arrival_date', 'status', 'quantity']
+    readonly_fields = ['status']  # Запретить изменение статуса вручную
+
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:
+            obj.shop = request.user  # Привязать к текущему администратору
+        super().save_model(request, obj, form, change)

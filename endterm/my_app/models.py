@@ -84,3 +84,28 @@ class ItemPhoto(models.Model):
 
     def __str__(self):
         return f"Photo for {self.item.name}"
+
+
+class PreOrder(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('completed', 'Completed'),
+    ]
+
+    shop = models.ForeignKey(Shop, on_delete=models.CASCADE, limit_choices_to={'is_staff': True})
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="preorders")
+    arrival_date = models.DateField()
+    quantity = models.PositiveIntegerField(default=0)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+
+    def __str__(self):
+        return f"PreOrder for {self.item.name} by {self.shop.username}"
+
+    def complete_order(self):
+        print("complete order getted")
+        """Mark the preorder as completed and update the product's quantity."""
+        if self.status == 'pending':
+            self.item.count += self.quantity
+            self.item.save()
+            self.status = 'completed'
+            self.save()
