@@ -189,12 +189,13 @@ class ItemTransactionView(APIView):
         product = get_object_or_404(Item, pk=pk, shop=request.user)
 
         decrement = request.data.get("count", 0)
-        print(decrement)
+
         if not isinstance(decrement, int) or decrement <= 0:
             return Response({"error": "Invalid decrement value"}, status=status.HTTP_400_BAD_REQUEST)
         if product.count >= decrement:
             product.count -= decrement
-            print(product.count)
+            if product.count == 0:
+                product.in_stock = False
             product.save()
             return Response({"message": "count decreased", "count": product.count}, status=status.HTTP_200_OK)
         else:
