@@ -25,6 +25,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'in': 'header',
+            'name': 'Authorization',
+            'description': 'JWT Authorization header using the Bearer scheme. Example: "Bearer {your '
+                           'token}"'
+        }
+    },
+    'USE_SESSION_AUTH': False,  # Disable session authentication for Swagger
+    'DEFAULT_API_URL': 'http://127.0.0.1:8000/',  # Replace with your API URL
+}
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
@@ -53,6 +66,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'django_celery_beat',
+    'drf_yasg',
 ]
 
 AUTH_USER_MODEL = 'my_app.Shop'
