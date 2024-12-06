@@ -10,6 +10,7 @@ from rest_framework.generics import ListCreateAPIView, ListAPIView
 from .serializers import ItemSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.shortcuts import get_object_or_404
+from django.http import HttpResponseRedirect
 
 
 class CategoryListCreateView(generics.ListCreateAPIView):
@@ -34,6 +35,10 @@ class CategoryRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 
     def perform_create(self, serializer):
         serializer.save(shop_id=self.request.user.id)
+
+from django.shortcuts import render, redirect
+from django.http import HttpResponse
+from .forms import ShopRegisterForm
 
 
 class ItemListCreateView(ListCreateAPIView):
@@ -87,13 +92,15 @@ class ItemListCreateView(ListCreateAPIView):
 class ShopRegisterView(APIView):
     permission_classes = [AllowAny]
 
+    def get(self, request, *args, **kwargs):
+        return render(request, 'shop/register.html')
+
     def post(self, request, *args, **kwargs):
         serializer = ShopRegisterSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": "Shop registered successfully"}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+            return HttpResponseRedirect('/admin')
+        return Response(serializer.errors, status=400)
 
 class ShopListView(ListAPIView):
     queryset = Shop.objects.all()
